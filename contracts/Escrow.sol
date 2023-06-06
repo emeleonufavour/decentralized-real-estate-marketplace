@@ -26,7 +26,6 @@ contract Escrow {
         _;
     }
     //to know if an nft is listed
-
     mapping(uint256 => bool) public isListed;
     //the id of the nft to the purchasePrice
     mapping(uint256 => uint256) public purchasePrice;
@@ -47,27 +46,23 @@ contract Escrow {
         lender = _lender;
     }
 
-    //the list function is to list all the properties
+    ///@notice the list function is to list all the properties
     function list(
         uint256 _nftID,
         address _buyer,
         uint256 _purchasePrice,
         uint256 _escrowAmount
     ) public payable onlySeller {
+        //transfers the NFT(RealEstate token) from the person calling the function to this contract's address
         IERC721(nftAddress).transferFrom(msg.sender, address(this), _nftID);
         isListed[_nftID] = true;
         purchasePrice[_nftID] = _purchasePrice;
         escrowAmount[_nftID] = _escrowAmount;
         buyer[_nftID] = _buyer;
-        // // Transfer NFT from seller to this contract
-        // IERC721(nftAddress).transferFrom(msg.sender, address(this), _nftID);
-        // isListed[_nftID] = true;
-        // purchasePrice[_nftID] = _purchasePrice;
-        // escrowAmount[_nftID] = _escrowAmount;
-        // buyer[_nftID] = _buyer;
     }
 
     // Put Under Contract (only buyer - payable escrow)
+    ///@notice this function lets the buyer to put in a down payment so he can get into the deal or escrow
     function depositEarnest(uint256 _nftID) public payable onlyBuyer(_nftID) {
         require(msg.value >= escrowAmount[_nftID]);
     }
@@ -85,28 +80,58 @@ contract Escrow {
         approval[_nftID][msg.sender] = true;
     }
 
+    function finalizeSale(uint256 _nftID) public payable {
+        require(
+            inspectionPassed[_nftID],
+            "Inspector has not approved of this sale"
+        );
+        require(
+            approval[_nftID][buyer[_nftID]],
+            "The buyer has not approved of this sale"
+        );
+        require(
+            approval[_nftID][seller],
+            "The seller has not approved of this sale"
+        );
+        require(
+            approval[_nftID][lender],
+            "The lender has not approved of this sale"
+        );
+        require(
+            address(this).balance >= purchasePrice[_nftID],
+            "The contract does not have enough balance to perform this sale"
+        );
+        (bool success, ) = payable(seller).call{value: address(this).balance}(
+            ""
+        );
+        require(
+            success,
+            "There was a problem sending ether to the Seller's address"
+        );
+    }
+
     // Finalize Sale
     // -> Require inspection status (add more items here, like appraisal)
     // -> Require sale to be authorized
     // -> Require funds to be correct amount
     // -> Transfer NFT to buyer
     // -> Transfer Funds to Seller
-    function finalizeSale(uint256 _nftID) public {
-        require(inspectionPassed[_nftID]);
-        require(approval[_nftID][buyer[_nftID]]);
-        require(approval[_nftID][seller]);
-        require(approval[_nftID][lender]);
-        require(address(this).balance >= purchasePrice[_nftID]);
+    // function finalizeSale(uint256 _nftID) public {
+    //     require(inspectionPassed[_nftID]);
+    //     require(approval[_nftID][buyer[_nftID]]);
+    //     require(approval[_nftID][seller]);
+    //     require(approval[_nftID][lender]);
+    //     require(address(this).balance >= purchasePrice[_nftID]);
 
-        isListed[_nftID] = false;
+    //     isListed[_nftID] = false;
 
-        (bool success, ) = payable(seller).call{value: address(this).balance}(
-            ""
-        );
-        require(success);
+    //     (bool success, ) = payable(seller).call{value: address(this).balance}(
+    //         ""
+    //     );
+    //     require(success);
 
-        IERC721(nftAddress).transferFrom(address(this), buyer[_nftID], _nftID);
-    }
+    //     IERC721(nftAddress).transferFrom(address(this), buyer[_nftID], _nftID);
+    // }
 
     // Cancel Sale (handle earnest deposit)
     // -> if inspection status is not approved, then refund, otherwise send to seller

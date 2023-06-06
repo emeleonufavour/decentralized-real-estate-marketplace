@@ -1,5 +1,6 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
+const { extendEnvironment } = require('hardhat/config');
 
 
 //used to convert currencies to tokens
@@ -13,19 +14,11 @@ describe('Escrow', () => {
     let buyer, seller, inspector, lender
     let realEstate, escrow
 
-    it('saves the addresses', async ()=>{
-       
-        
- 
-        
-     })
-
     beforeEach( async ()=>{
-         const RealEstate = await ethers.getContractFactory('RealEstate');
+        const RealEstate = await ethers.getContractFactory('RealEstate');
         realEstate = await RealEstate.deploy();
         [buyer, seller,inspector,lender] = await ethers.getSigners();
        
-
        let transaction = await realEstate.connect(seller).mint("https://ipfs.io/ipfs/QmTudSYeM7mz3PkYEWXWqPjomRPHogcMFSq7XAvsvsgAPS");
        await transaction.wait();
 
@@ -36,13 +29,11 @@ describe('Escrow', () => {
        transaction = await realEstate.connect(seller).approve(escrow.address, 1);
        await transaction.wait();
        
-       //list property
-       transaction = escrow.connect(seller).list(1);
-       //await transaction.wait();
-
-       console.log("Entered beforeEach");
+       //list property 
+       //the tokens property is so you can parse ether as a parameter in the function
+        transaction = await escrow.connect(seller).list(1,buyer.address,tokens(10), tokens(5));
+        await transaction.wait();
     });
-
 
     describe("Deployments", ()=>{
     it('returns NFT address', async ()=>{
@@ -65,11 +56,11 @@ describe('Escrow', () => {
         let result = await escrow.lender();
         expect(result).to.be.equal(lender.address);
     });
-})
+    });
 
-describe("Listing", ()=>{
+    describe("Listing", ()=>{
     it('Updates ownership', async ()=>{
-       let result = await escrow.nftAddress();
+       //let result = await escrow.nftAddress();
         expect(await realEstate.ownerOf(1)).to.be.equal(escrow.address);
      });
     it('Updates as listed',async()=>{
@@ -81,9 +72,92 @@ describe("Listing", ()=>{
         const result = await escrow.buyer(1);
         expect(result).to.be.equal(buyer.address);
     })
-    // it('Update ownership', async()=>{
-    //     expect(await realEstate.ownerOf(1)).to.be.equal(escrow.address);
-    // })
+    it(
+        "Returns purchase price", async function(){
+            const result = await escrow.purchasePrice(1);
+            expect(result).to.equal(tokens(10));
+        }
+    );
+    it(
+        "Returns escrow amount", async function(){
+            const result = await escrow.escrowAmount(1);
+            expect(result).to.equal(tokens(5));
+        }
+    );
+    
+    });
+    describe(
+        "Deposits", async function(){
+            it(
+                "Updates contract balance", async function(){
+                    const transaction = await escrow.connect(buyer).depositEarnest(1,{value: tokens(5)});
+                    await transaction.wait();
+                    const result = await escrow.getBalance();
+                    expect(result).to.equal(tokens(5));
+                }
+            );
+        }
+    );
+    describe(
+        "Inspection", async function(){
+            it(
+                "Updates inspection status", async function(){
+                    const transaction = await escrow.connect(inspector).updateInspectionStatus(1,true);
+                    await transaction.wait();
+                    const result = await escrow.inspectionPassed(1);
+                    expect(result).to.equal(true); 
+                   
+                }
+            );
+        }
+    );
+    describe(
+        "Approval", async function(){
+            it(
+                "Updates approval status", async function(){
+                    let transaction = await escrow.connect(buyer).approveSale(1);
+                    await transaction.wait();
+
+                    transaction = await escrow.connect(seller).approveSale(1);
+                    await transaction.wait();
+
+                    transaction = await escrow.connect(lender).approveSale(1);
+                    await transaction.wait();
+
+                    
+                    expect(await escrow.approval(1,buyer.address)).to.equal(true); 
+                    expect(await escrow.approval(1,seller.address)).to.equal(true);
+                    expect(await escrow.approval(1,lender.address)).to.equal(true);
+                   
+                }
+            );
+        }
+    );
+    describe(
+        "Sale", async function(){
+            beforeEach(
+                async ()=>{
+                    let transaction = await escrow.connect(buyer).depositEarnest(1,{value: tokens(5)});
+                    await transaction.wait();
+                    transaction = await escrow.connect(inspector).updateInspectionStatus(1,true);
+                    transaction = await escrow.connect(buyer).approveSale(1);
+                    await transaction.wait();
+                    transaction = await escrow.connect(seller).approveSale(1);
+                    await transaction.wait();
+                    transaction = await escrow.connect(lender).approveSale(1);
+                    await transaction.wait();
+                    await lender.sendTransaction({to: escrow.address, value: tokens(5)});
+                    transaction = await escrow.connect(seller).finalizeSale(1);
+                    await transaction.wait();
+                }
+            );
+            it(
+                "works", async function(){
+                    
+                }
+            );
+        }
+    );
 })
     //........................................................
 
@@ -247,4 +321,3 @@ describe("Listing", ()=>{
     
 
     
-})
