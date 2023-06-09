@@ -18,6 +18,7 @@ describe('Escrow', () => {
         const RealEstate = await ethers.getContractFactory('RealEstate');
         realEstate = await RealEstate.deploy();
         [buyer, seller,inspector,lender] = await ethers.getSigners();
+        
        
        let transaction = await realEstate.connect(seller).mint("https://ipfs.io/ipfs/QmTudSYeM7mz3PkYEWXWqPjomRPHogcMFSq7XAvsvsgAPS");
        await transaction.wait();
@@ -152,8 +153,20 @@ describe('Escrow', () => {
                 }
             );
             it(
-                "works", async function(){
-                    
+                "Updates balance", async function(){
+                     expect(await escrow.getBalance()).to.equal(0);
+                }
+            );
+            it(
+                "Transfers to NFT to buyer", async function(){
+                    expect(await realEstate.ownerOf(1)).to.be.equal(buyer.address);
+                }
+            );
+            it(
+                "Cancel sale", async function(){
+                    let transaction = await escrow.connect(seller).cancelSale(1);
+                    await transaction.wait();
+                    expect(await escrow.getBalance()).to.equal(0);
                 }
             );
         }
