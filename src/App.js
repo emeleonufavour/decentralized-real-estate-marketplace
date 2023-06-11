@@ -18,10 +18,12 @@ function App(){
 
   const loadBlockchainData = async function(){
     const provider = new ethers.providers.Web3Provider(window.ethereum);
-    console.log(provider);
-    const accounts = await window.ethereum.request({method: 'eth_requestAccounts'});
-    setAccount(accounts[0]);
-    console.log(accounts[0]);
+    window.ethereum.on('accountsChanged', async function(){
+      const accounts = await window.ethereum.request({method: 'eth_requestAccounts'});
+      const account = ethers.utils.getAddress(accounts[0]);
+      setAccount(account);
+      console.log(account);
+    })
   }
   useEffect(
     ()=>{
@@ -30,8 +32,27 @@ function App(){
   );
   return(
     <div>
-      <div>
-        <h3>Welcome to Millow</h3>
+    <Navigation account={account} setAccount={setAccount}/>
+    <Search/>
+      <div className='cards__section'>
+        <h3>Homes For You!</h3>
+        <hr/>
+        <div className='cards'>
+          <div className='card'>
+            <div className='card__image'>
+              <img src="" alt="Home" />
+            </div>
+            <div className='card__info'>
+              <h4>1 ETH</h4>
+              <p>
+                <strong>1</strong> beds |
+                <strong>2</strong> ba |
+                <strong>3</strong> sqft |
+              </p>
+              <p>1234 Elm Street</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
