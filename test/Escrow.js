@@ -158,8 +158,14 @@ describe('Escrow', () => {
                 }
             );
             it(
-                "Transfers to NFT to buyer", async function(){
+                "Transfers NFT to buyer", async function(){
                     expect(await realEstate.ownerOf(1)).to.be.equal(buyer.address);
+                }
+            );
+            it(
+                "Total amount of NFTs owned", async function(){
+                    const transaction = await realEstate.balanceOf(buyer.address);
+                    expect(transaction).to.equal(1);
                 }
             );
             it(

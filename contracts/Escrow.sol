@@ -3,6 +3,12 @@ pragma solidity ^0.8.0;
 
 interface IERC721 {
     function transferFrom(address _from, address _to, uint256 _id) external;
+
+    function safeTransferFrom(
+        address _from,
+        address _to,
+        uint256 _tokenId
+    ) external payable;
 }
 
 contract Escrow {
@@ -86,25 +92,49 @@ contract Escrow {
     // -> Require funds to be correct amount
     // -> Transfer NFT to buyer
     // -> Transfer Funds to Seller
-    function finalizeSale(uint256 _nftID) public {
-        require(inspectionPassed[_nftID]);
-        require(approval[_nftID][buyer[_nftID]]);
-        require(approval[_nftID][seller]);
-        require(approval[_nftID][lender]);
-        require(address(this).balance >= purchasePrice[_nftID]);
+    function finalizeSale(uint256 _nftID) public payable {
+        require(
+            inspectionPassed[_nftID],
+            "Inspector has not approved of this sale"
+        );
+        require(
+            approval[_nftID][buyer[_nftID]],
+            "The buyer has not approved of this sale"
+        );
+        require(
+            approval[_nftID][seller],
+            "The seller has not approved of this sale"
+        );
+        require(
+            approval[_nftID][lender],
+            "The lender has not approved of this sale"
+        );
+        require(
+            address(this).balance >= purchasePrice[_nftID],
+            "The contract does not have enough balance to perform this sale"
+        );
 
         isListed[_nftID] = false;
 
+        //send ether from escrow address to the seller address
         (bool success, ) = payable(seller).call{value: address(this).balance}(
             ""
         );
-        require(success);
-
-        IERC721(nftAddress).transferFrom(address(this), buyer[_nftID], _nftID);
+        require(
+            success,
+            "There was a problem sending ether to the Seller's address"
+        );
+        //transfer NFT from escrow address to the buyer address
+        IERC721(nftAddress).safeTransferFrom(
+            address(this),
+            buyer[_nftID],
+            _nftID
+        );
     }
 
     // Cancel Sale (handle earnest deposit)
     // -> if inspection status is not approved, then refund, otherwise send to seller
+
     function cancelSale(uint256 _nftID) public {
         if (inspectionPassed[_nftID] == false) {
             payable(buyer[_nftID]).transfer(address(this).balance);
