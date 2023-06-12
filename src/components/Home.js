@@ -86,8 +86,8 @@ const Home = ({ home, provider, account, escrow, togglePop }) => {
         const signer = await provider.getSigner()
 
         // Lender approves...
-        const transaction = await escrow.connect(signer).approveSale(home.id)
-        await transaction.wait()
+        const transaction = await escrow.connect(signer).approveSale(home.id);
+        await transaction.wait();
 
         // Lender sends funds to contract...
         const lendAmount = (await escrow.purchasePrice(home.id) - await escrow.escrowAmount(home.id))
@@ -97,17 +97,17 @@ const Home = ({ home, provider, account, escrow, togglePop }) => {
     }
 
     const sellHandler = async () => {
-        const signer = await provider.getSigner()
+        const signer = await provider.getSigner();
 
         // Seller approves...
-        let transaction = await escrow.connect(signer).approveSale(home.id)
-        await transaction.wait()
+        let transaction = await escrow.connect(signer).approveSale(home.id);
+        await transaction.wait();
 
         // Seller finalize...
-        transaction = await escrow.connect(signer).finalizeSale(home.id)
-        await transaction.wait()
+        transaction = await escrow.connect(signer).finalizeSale(home.id);
+        await transaction.wait();
 
-        setHasSold(true)
+        setHasSold(true);
     }
 
     useEffect(() => {
