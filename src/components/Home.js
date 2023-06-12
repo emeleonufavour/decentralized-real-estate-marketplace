@@ -19,11 +19,11 @@ const Home = ({ home, provider, account, escrow, togglePop }) => {
     const fetchDetails = async () => {
         // -- Buyer
 
-        const buyer = await escrow.buyer(home.id)
-        setBuyer(buyer)
+        const buyer = await escrow.buyer(home.id);
+        setBuyer(buyer);
 
-        const hasBought = await escrow.approval(home.id, buyer)
-        setHasBought(hasBought)
+        const hasBought = await escrow.approval(home.id, buyer);
+        setHasBought(hasBought);
 
         // -- Seller
 
@@ -58,28 +58,28 @@ const Home = ({ home, provider, account, escrow, togglePop }) => {
     }
 
     const buyHandler = async () => {
-        const escrowAmount = await escrow.escrowAmount(home.id)
-        const signer = await provider.getSigner()
+        const escrowAmount = await escrow.escrowAmount(home.id);
+        const signer = await provider.getSigner();
 
         // Buyer deposit earnest
-        let transaction = await escrow.connect(signer).depositEarnest(home.id, { value: escrowAmount })
-        await transaction.wait()
+        let transaction = await escrow.connect(signer).depositEarnest(home.id, { value: escrowAmount });
+        await transaction.wait();
 
         // Buyer approves...
-        transaction = await escrow.connect(signer).approveSale(home.id)
-        await transaction.wait()
+        transaction = await escrow.connect(signer).approveSale(home.id);
+        await transaction.wait();
 
-        setHasBought(true)
+        setHasBought(true);
     }
 
     const inspectHandler = async () => {
-        const signer = await provider.getSigner()
+        const signer = await provider.getSigner();
 
         // Inspector updates status
-        const transaction = await escrow.connect(signer).updateInspectionStatus(home.id, true)
-        await transaction.wait()
+        const transaction = await escrow.connect(signer).updateInspectionStatus(home.id, true);
+        await transaction.wait();
 
-        setHasInspected(true)
+        setHasInspected(true);
     }
 
     const lendHandler = async () => {
